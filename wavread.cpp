@@ -31,6 +31,7 @@ int main(int argc, char *argv[]) {
     uint8_t bps[2];
     char data[4];
     uint8_t data_sz[4];
+    char fmtType[4];
 
     if (argc != 2)
         perror ("incorrect arguments passed");
@@ -65,12 +66,21 @@ int main(int argc, char *argv[]) {
 
     ret = fread(audiofmt, sizeof(uint8_t), 2, wavfile);
     fcheck(ret, 2);
+    if (*audiofmt == 1)
+        strncpy(fmtType, "PCM\0", 4);
+
 
     ret = fread(numChan, sizeof(uint8_t), 2, wavfile);
     fcheck(ret, 2);
 
     ret = fread(sampRate, sizeof(uint8_t), 4, wavfile);
     fcheck(ret, 4);
+    uint32_t rate = 0;
+    for (int i = 3; i >=0; i--) {
+        rate <<= 8;
+        rate += sampRate[i];
+    }
+    
 
     ret = fread(byteRate, sizeof(uint8_t), 4, wavfile);
     fcheck(ret, 4);
@@ -83,13 +93,13 @@ int main(int argc, char *argv[]) {
 
     ret = fread(data, sizeof(char), 4, wavfile);
     fcheck(ret, 4);
-    if (strncmp(data, "data", 4) != 0)
-        perror ("data string is corrupted");
+    if (int err = strncmp(data, "data", 4) != 0)
+        perror ("data string corrupted");
 
     ret = fread(data_sz, sizeof(uint8_t), 4, wavfile);
     fcheck(ret, 4);
 
-    printf("Wave File Format:\nName: %s\nSize: %u\nSample Rate: %u\nSample Width: %u\nChannels: %u\n", argv[1], *file_sz, *sampRate, *audiofmt, *numChan);
+    printf("Wave File Info\nName: %s\nSize: %u frames\nSample Rate: %u sps\nFormat Type: %u-bit %s\nChannels: %u\n", argv[1], *file_sz, rate, *fmtlen, fmtType, *numChan);
     
     fclose (wavfile);
 
